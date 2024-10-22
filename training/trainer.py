@@ -6,7 +6,7 @@ from tqdm import tqdm
 import wandb
 
 class Trainer:
-    def __init__(self, model, optimizer, batch_size=8, log_interval=100, use_wandb=False, device='cuda', checkpoint_dir="checkpoints"):
+    def __init__(self, model, optimizer, args, batch_size=8, log_interval=100, eval_interval=1000, use_wandb=False, device='cuda', checkpoint_dir="checkpoints"):
         """
         Args:
             model (nn.Module): The CLIP model.
@@ -19,11 +19,15 @@ class Trainer:
         """
         self.model = model
         self.optimizer = optimizer
+        self.program_args = args
         self.batch_size = batch_size
         self.log_interval = log_interval
+        self.eval_interval = eval_interval
         self.device = device
         self.use_wandb = use_wandb
         self.checkpoint_dir = checkpoint_dir
+
+        self.global_iteration = 0
 
         # Define loss functions (cross-entropy loss)
         self.criterion = nn.CrossEntropyLoss()
@@ -34,7 +38,7 @@ class Trainer:
         # Create checkpoint directory if it does not exist
         os.makedirs(self.checkpoint_dir, exist_ok=True)
 
-    def train_one_epoch(self, train_loader, epoch):
+    def train_one_epoch(self, train_loader, val_loader, epoch):
         self.model.train()
         total_loss = 0.0
         progress_bar = tqdm(train_loader, desc=f"Training Epoch {epoch+1}")
@@ -69,13 +73,36 @@ class Trainer:
 
             # Update progress bar and log metrics
             progress_bar.set_postfix({"loss": total_loss / (batch_idx + 1)})
-            if self.use_wandb:
+            if self.use_wandb and ((batch_idx + 1) % self.log_interval == 0):
                 wandb.log({"train_loss": total_loss / (batch_idx + 1), "epoch": epoch + 1})
 
-    def validate_one_epoch(self, val_loader, epoch):
+
+            if ((self.global_iteration + 1) % self.eval_interval) == 0:
+                
+                # Validate every eval_interval steps
+                val_loss = self.validate_one_epoch(val_loader, epoch, batch_idx)
+
+                # Log the validation loss
+                print(f"Validation Loss after Epoch {epoch + 1}, Step {batch_idx}: {val_loss:.4f}")
+                if self.use_wandb:
+                    wandb.log({"val_loss": val_loss, "epoch": epoch + 1})
+
+                # Checkpoint the model if validation loss improves
+                if val_loss < self.best_val_loss:
+                    print(f"Validation loss improved from {self.best_val_loss:.4f} to {val_loss:.4f}. Saving checkpoint...")
+                    self.best_val_loss = val_loss
+                    self.save_checkpoint(epoch, val_loss)
+                else:
+                    print(f"Validation loss did not improve. Best val loss: {self.best_val_loss:.4f}.")
+            
+            self.global_iteration += 1
+
+                
+
+    def validate_one_epoch(self, val_loader, epoch, step):
         self.model.eval()
         total_loss = 0.0
-        progress_bar = tqdm(val_loader, desc=f"Validation Epoch {epoch+1}")
+        progress_bar = tqdm(val_loader, desc=f"Validation Epoch {epoch+1} Step {step+1}")
 
         with torch.no_grad():
             for batch_idx, batch in enumerate(progress_bar):
@@ -101,18 +128,13 @@ class Trainer:
 
                 total_loss += loss.item()
 
-                # Update progress bar and log metrics
-                progress_bar.set_postfix({"val_loss": total_loss / (batch_idx + 1)})
-                if self.use_wandb and ((batch_idx + 1) % self.log_interval == 0):
-                    wandb.log({"val_loss": total_loss / (batch_idx + 1), "epoch": epoch + 1})
-
         return total_loss / len(val_loader)
 
     def save_checkpoint(self, epoch, val_loss): # TODO: improve the naming of the checkpoints
         """
         Saves the model checkpoint if the validation loss improves.
         """
-        checkpoint_path = os.path.join(self.checkpoint_dir, f"model_epoch_{epoch+1}_val_loss_{val_loss:.4f}.pt")
+        checkpoint_path = os.path.join(self.checkpoint_dir, f"clip_{self.program_args.text_model_size}-text_{self.program_args.vision_model_size}-vision_{'peft' if self.program_args.use_peft else 'projection_only'}_seed{self.program_args.seed}.pt")
         torch.save({
             'epoch': epoch + 1,
             'model_state_dict': self.model.state_dict(),
@@ -130,23 +152,7 @@ class Trainer:
             print(f"Epoch {epoch + 1}/{epochs}")
             
             # Train for one epoch
-            self.train_one_epoch(train_loader, epoch)
-
-            # Validate after each epoch
-            val_loss = self.validate_one_epoch(val_loader, epoch)
-
-            # Log the validation loss
-            print(f"Validation Loss after Epoch {epoch + 1}: {val_loss:.4f}")
-            if self.use_wandb:
-                wandb.log({"val_loss_epoch": val_loss, "epoch": epoch + 1})
-
-            # Checkpoint the model if validation loss improves
-            if val_loss < self.best_val_loss:
-                print(f"Validation loss improved from {self.best_val_loss:.4f} to {val_loss:.4f}. Saving checkpoint...")
-                self.best_val_loss = val_loss
-                self.save_checkpoint(epoch, val_loss)
-            else:
-                print(f"Validation loss did not improve. Best val loss: {self.best_val_loss:.4f}.")
+            self.train_one_epoch(train_loader, val_loader, epoch)
 
         if self.use_wandb:
             wandb.finish()
