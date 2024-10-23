@@ -33,7 +33,7 @@ def get_vision_model_name(sz):
     sz2modelname = {
         "small": "google/vit-base-patch16-224-in21k",
         "medium": "google/vit-large-patch16-224-in21k",
-        "large": "google/vit-huge-patch16-224-in21k"
+        "large": "google/vit-huge-patch14-224-in21k"
     }
 
     return sz2modelname[sz]
