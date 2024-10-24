@@ -55,16 +55,16 @@ def get_args():
 
     # Model configuration
     parser.add_argument("--text_model_size", type=str, default="medium", 
-                        help="Pretrained text model name")
+                        help="Pretrained text model size")
     parser.add_argument("--vision_model_size", type=str, default="medium", 
-                        help="Pretrained vision model name")
+                        help="Pretrained vision model size")
     parser.add_argument("--embedding_dim", type=int, default=1024, 
                         help="Dimension of the joint embedding space")
     parser.add_argument("--use_peft", action="store_true", 
                         help="Whether to use Parameter-Efficient Fine-Tuning (PEFT)")
 
     # Training configuration
-    parser.add_argument("--seed", type=int, default=42,
+    parser.add_argument("--seed", type=int, default=44,
                         help="Set the seed for the training")
     parser.add_argument("--epochs", type=int, default=10, 
                         help="Number of training epochs")

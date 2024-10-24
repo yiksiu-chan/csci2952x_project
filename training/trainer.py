@@ -94,6 +94,8 @@ class Trainer:
                     self.save_checkpoint(epoch, val_loss)
                 else:
                     print(f"Validation loss did not improve. Best val loss: {self.best_val_loss:.4f}.")
+                
+                self.model.train()
             
             self.global_iteration += 1
 
