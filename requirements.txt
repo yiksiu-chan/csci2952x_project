@@ -3,3 +3,4 @@ transformers
 peft
 pycocotools
 wandb
+torch==2.5.0
