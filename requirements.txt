@@ -4,3 +4,4 @@ peft
 pycocotools
 wandb
 unibench
+torch==2.5.0
