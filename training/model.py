@@ -6,6 +6,27 @@ import torch.nn.functional as F
 from transformers import AutoModel
 from peft import get_peft_model, LoraConfig
 
+# https://www.reddit.com/r/LocalLLaMA/comments/15sgg4m/what_modules_should_i_target_when_training_using/
+def find_target_modules(model):
+    # Initialize a Set to Store Unique Layers
+    unique_layers = set()
+    
+    # Iterate Over All Named Modules in the Model
+    for name, module in model.named_modules():
+        # Check if the Module Type Contains 'Linear4bit'
+        if "h" in str(type(module)):
+        # if True:
+            # Extract the Type of the Layer
+            layer_type = name.split('.')[-1]
+            
+            # Add the Layer Type to the Set of Unique Layers
+            unique_layers.add(layer_type)
+
+    # Return the Set of Unique Layers Converted to a List
+
+    print(list(unique_layers))
+
+    return list(unique_layers)
 
 
 class ProjectionHead(nn.Module):
@@ -24,10 +45,11 @@ class CustomCLIP(nn.Module):
         self.text_model = AutoModel.from_pretrained(text_model_name)
         self.vision_model = AutoModel.from_pretrained(vision_model_name)
 
+
         # Check if PEFT (LoRA) is used
         if use_peft:
-            lora_config_text = LoraConfig(r=16, lora_alpha=32, lora_dropout=0.1, target_modules=["query", "value"])
-            lora_config_vision = LoraConfig(r=16, lora_alpha=32, lora_dropout=0.1, target_modules=["query", "value"])
+            lora_config_text = LoraConfig(r=16, lora_alpha=32, lora_dropout=0.1, target_modules='all-linear')
+            lora_config_vision = LoraConfig(r=16, lora_alpha=32, lora_dropout=0.1, target_modules='all-linear')
 
             # Apply LoRA to both text and vision models
             self.text_model = get_peft_model(self.text_model, lora_config_text)
@@ -104,5 +126,4 @@ class CustomCLIP(nn.Module):
         logits_per_image = logit_scale * image_features @ text_features.t()
         logits_per_text = logits_per_image.t()
 
-        # shape = [global_batch_size, global_batch_size]
         return logits_per_image, logits_per_text
