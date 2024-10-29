@@ -141,11 +141,14 @@ if __name__ == "__main__":
         batch_size = args.batch_size
     ).load_datasets()
 
+    # Edit before individual runs
     if args.use_wandb:
+        wandb.login(key="")
         wandb.init(
-            project="CSCI2950X_ImprovingCLIP", 
+            project="clip_lora", 
             name=f"clip_{args.text_model_size}-text_{args.vision_model_size}-vision_{'peft' if args.use_peft else 'projection_only'}_seed{args.seed}",
-            config=vars(args)
+            config=vars(args),
+            entity="ethathua"
         )
 
     # Train the model

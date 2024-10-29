@@ -48,8 +48,8 @@ class CustomCLIP(nn.Module):
 
         # Check if PEFT (LoRA) is used
         if use_peft:
-            lora_config_text = LoraConfig(r=16, lora_alpha=32, lora_dropout=0.1, target_modules='all-linear')
-            lora_config_vision = LoraConfig(r=16, lora_alpha=32, lora_dropout=0.1, target_modules='all-linear')
+            lora_config_text = LoraConfig(r=256, lora_alpha=512, lora_dropout=0.1, target_modules='all-linear')
+            lora_config_vision = LoraConfig(r=256, lora_alpha=512, lora_dropout=0.1, target_modules='all-linear')
 
             # Apply LoRA to both text and vision models
             self.text_model = get_peft_model(self.text_model, lora_config_text)

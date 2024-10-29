@@ -44,35 +44,42 @@ class Trainer:
         progress_bar = tqdm(train_loader, desc=f"Training Epoch {epoch+1}")
 
         for batch_idx, batch in enumerate(progress_bar):
-            # Move batch data to the target device
-            batch_device = {key: val.to(self.device) for key, val in batch.items()}
+            try:
+                # Move batch data to the target device
+                batch_device = {key: val.to(self.device) for key, val in batch.items()}
 
-            # Forward pass
-            logits_per_image, logits_per_text = self.model(
-                {
-                    "input_ids": batch_device["input_ids"],
-                    "attention_mask": batch_device["attention_mask"]
-                },
-                {"pixel_values": batch_device["pixel_values"]}
-            )
+                # Forward pass
+                logits_per_image, logits_per_text = self.model(
+                    {
+                        "input_ids": batch_device["input_ids"],
+                        "attention_mask": batch_device["attention_mask"]
+                    },
+                    {"pixel_values": batch_device["pixel_values"]}
+                )
 
-            # Create target labels (diagonal 1s for correct matches)
-            labels = torch.arange(len(batch["pixel_values"]), device=self.device)
+                # Create target labels (diagonal 1s for correct matches)
+                labels = torch.arange(len(batch["pixel_values"]), device=self.device)
 
-            # Compute losses (image-to-text and text-to-image cross-entropy loss)
-            loss_i2t = self.criterion(logits_per_image, labels)
-            loss_t2i = self.criterion(logits_per_text, labels)
-            loss = (loss_i2t + loss_t2i) / 2.0
+                # Compute losses (image-to-text and text-to-image cross-entropy loss)
+                loss_i2t = self.criterion(logits_per_image, labels)
+                loss_t2i = self.criterion(logits_per_text, labels)
+                loss = (loss_i2t + loss_t2i) / 2.0
 
-            # Backpropagation
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
+                # Backpropagation
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
 
-            total_loss += loss.item()
+                total_loss += loss.item()
 
-            # Update progress bar and log metrics
-            progress_bar.set_postfix({"loss": total_loss / (batch_idx + 1)})
+                # Update progress bar and log metrics
+                progress_bar.set_postfix({"loss": total_loss / (batch_idx + 1)})
+            
+            except FileNotFoundError as e:
+                # Log the missing file and skip this batch
+                print(f"Warning: {e}. Skipping batch {batch_idx} in epoch {epoch}.")
+                continue 
+            
             if self.use_wandb and ((batch_idx + 1) % self.log_interval == 0):
                 wandb.log({"train_loss": total_loss / (batch_idx + 1), "epoch": epoch + 1})
 
