@@ -143,7 +143,7 @@ class Trainer:
         """
         Saves the model checkpoint if the validation loss improves.
         """
-        checkpoint_path = os.path.join(self.checkpoint_dir, f"clip_{self.program_args.text_model_size}-text_{self.program_args.vision_model_size}-vision_{'peft' if self.program_args.use_peft else 'projection_only'}_seed{self.program_args.seed}.pt")
+        checkpoint_path = os.path.join(self.checkpoint_dir, f"aug_clip_{self.program_args.text_model_size}-text_{self.program_args.vision_model_size}-vision_{'peft' if self.program_args.use_peft else 'projection_only'}_seed{self.program_args.seed}.pt")
         torch.save({
             'epoch': epoch + 1,
             'model_state_dict': self.model.state_dict(),

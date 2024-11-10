@@ -76,6 +76,7 @@ class CustomCLIP(nn.Module):
 
     def encode_image(self, vision_inputs):
         """Encode images and project to joint embedding space."""
+        vision_inputs = {k: v.long() for k, v in vision_inputs.items()}
 
         if self.use_peft:
             vision_embeddings = self.vision_model(**vision_inputs).last_hidden_state[:, 0, :]  # CLS token
@@ -90,6 +91,8 @@ class CustomCLIP(nn.Module):
 
     def encode_text(self, text_inputs):
         """Encode text and project to joint embedding space."""
+
+        text_inputs = {k: v.long() for k, v in text_inputs.items()}
         
         if self.use_peft:
             text_embeddings = self.text_model(**text_inputs).last_hidden_state[:, -1, :]  # EOS token for gpt2

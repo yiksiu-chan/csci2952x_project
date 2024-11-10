@@ -72,7 +72,7 @@ def get_args():
                         help="Batch size for training and validation")
     parser.add_argument("--learning_rate", type=float, default=1e-3, 
                         help="Learning rate for optimizer")
-    parser.add_argument("--log_interval", type=int, default=100, 
+    parser.add_argument("--log_interval", type=int, default=5000, 
                         help="How many batches to wait before logging training status")
     parser.add_argument("--eval_interval", type=int, default=5000, 
                         help="How many batches to wait before evaluating and checkpointing")
@@ -146,7 +146,7 @@ if __name__ == "__main__":
         wandb.login(key="")
         wandb.init(
             project="clip_lora", 
-            name=f"clip_{args.text_model_size}-text_{args.vision_model_size}-vision_{'peft' if args.use_peft else 'projection_only'}_seed{args.seed}",
+            name=f"aug_clip_{args.text_model_size}-text_{args.vision_model_size}-vision_{'peft' if args.use_peft else 'projection_only'}_seed{args.seed}",
             config=vars(args),
             entity="ethathua"
         )

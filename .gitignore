@@ -4,13 +4,13 @@ __pycache__
 .slurm_logs
 
 # Virtual environment
-.venv
+venv
 
 # Model checkpoints
 checkpoints
 
 # Raw data
-data/
+data/coco/
 
 # Slurm scripts
 slurm/
