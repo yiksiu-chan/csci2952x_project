@@ -1,13 +1,13 @@
 # Cache folders
 __pycache__
-.ipynb_checkpoints
-.slurm_logs
 
 # Virtual environment
+ssl_venv
 venv
 
-# Model checkpoints
+# Model weights
 checkpoints
+projection_weights
 
 # Raw data
 data/coco/

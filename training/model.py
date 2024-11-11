@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import pickle as pkl
 
 from transformers import AutoModel
 from peft import get_peft_model, LoraConfig
@@ -71,6 +72,16 @@ class CustomCLIP(nn.Module):
         # Define projection heads to map to joint space
         self.text_projection = ProjectionHead(text_hidden_size, embedding_dim)
         self.vision_projection = ProjectionHead(vision_hidden_size, embedding_dim)
+        
+        # Load projection layer weights based on specified model size
+        with open(f"../training/projection_weights/projector_medium-text_medium-vision.pkl", "rb") as f:
+            projection_weights = pkl.load(f)
+        
+        text_projection_weights = projection_weights["text_projection_layer"]
+        self.text_projection.load_state_dict(text_projection_weights)
+    
+        vision_projection_weights = projection_weights["image_projection_layer"]
+        self.vision_projection.load_state_dict(vision_projection_weights)
 
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
 
