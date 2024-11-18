@@ -72,9 +72,9 @@ def get_args():
                         help="Batch size for training and validation")
     parser.add_argument("--learning_rate", type=float, default=1e-3, 
                         help="Learning rate for optimizer")
-    parser.add_argument("--log_interval", type=int, default=5000, 
+    parser.add_argument("--log_interval", type=int, default=500, 
                         help="How many batches to wait before logging training status")
-    parser.add_argument("--eval_interval", type=int, default=5000, 
+    parser.add_argument("--eval_interval", type=int, default=500, 
                         help="How many batches to wait before evaluating and checkpointing")
     parser.add_argument("--use_wandb", action="store_true", 
                         help="Whether to log metrics to Weights and Biases")
@@ -104,6 +104,8 @@ if __name__ == "__main__":
 
     # Define model and data loader
     clip_model = CustomCLIP(
+        args.text_model_size,
+        args.vision_model_size,
         text_model_name, 
         vision_model_name, 
         embedding_dim=args.embedding_dim,
@@ -115,30 +117,34 @@ if __name__ == "__main__":
 
     # Initialize the trainer
     trainer = Trainer(
-        clip_model, 
-        optimizer, 
-        args,
-        batch_size=args.batch_size, 
-        log_interval=args.log_interval, 
-        eval_interval=args.eval_interval,
-        use_wandb=args.use_wandb,
-        checkpoint_dir=args.checkpoint_dir
+    clip_model, 
+    optimizer, 
+    args,
+    batch_size=args.batch_size, 
+    log_interval=args.log_interval, 
+    eval_interval=args.eval_interval,
+    use_wandb=args.use_wandb,
+    checkpoint_dir=args.checkpoint_dir,
+    neg_weight=0.1 
     )
-
+    
+    # TODO: remove hardcoded negative captions path
     train_dataloader = MSCOCODataLoader(
-        args.train_captions_json_path, 
-        args.train_images_folder_path, 
-        text_model_name, 
-        vision_model_name,
-        batch_size = args.batch_size
+    captions_file=args.train_captions_json_path, 
+    neg_captions_file="../augment_annotations/variants_train2017_all.csv",  
+    image_folder=args.train_images_folder_path, 
+    text_model_name=text_model_name, 
+    vision_model_name=vision_model_name,
+    batch_size=args.batch_size
     ).load_datasets()
 
     val_dataloader = MSCOCODataLoader(
-        args.val_captions_json_path,
-        args.val_images_folder_path,
-        text_model_name, 
-        vision_model_name,
-        batch_size = args.batch_size
+    captions_file=args.val_captions_json_path, 
+    neg_captions_file="../augment_annotations/variants_train2017_all.csv", 
+    image_folder=args.val_images_folder_path, 
+    text_model_name=text_model_name, 
+    vision_model_name=vision_model_name,
+    batch_size=args.batch_size
     ).load_datasets()
 
     # Edit before individual runs

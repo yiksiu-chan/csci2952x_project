@@ -2,7 +2,6 @@
 __pycache__
 
 # Virtual environment
-ssl_venv
 venv
 
 # Model weights
