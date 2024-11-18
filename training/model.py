@@ -40,7 +40,7 @@ class ProjectionHead(nn.Module):
 
 
 class CustomCLIP(nn.Module):
-    def __init__(self, text_model_name, vision_model_name, embedding_dim=768, use_peft=False):
+    def __init__(self, text_model_size, vision_model_size, text_model_name, vision_model_name, embedding_dim=768, use_peft=False):
         super().__init__()
         # Load models from Huggingface
         self.text_model = AutoModel.from_pretrained(text_model_name)
@@ -74,7 +74,7 @@ class CustomCLIP(nn.Module):
         self.vision_projection = ProjectionHead(vision_hidden_size, embedding_dim)
         
         # Load projection layer weights based on specified model size
-        with open(f"../training/projection_weights/projector_medium-text_medium-vision.pkl", "rb") as f:
+        with open(f"../training/projection_weights/projector_{text_model_size}-text_{vision_model_size}-vision.pkl", "rb") as f:
             projection_weights = pkl.load(f)
         
         text_projection_weights = projection_weights["text_projection_layer"]
@@ -115,6 +115,21 @@ class CustomCLIP(nn.Module):
         text_projected = F.normalize(text_projected, dim=-1)
         
         return text_projected
+
+    def encode_all_text(self, text_inputs):
+        """Encode positive and negative text inputs together."""
+        text_inputs = {k: v.long() for k, v in text_inputs.items()}
+        if self.use_peft:
+            text_embeddings = self.text_model(**text_inputs).last_hidden_state[:, -1, :]  # EOS token for gpt2
+        else:
+            with torch.no_grad():
+                text_embeddings = self.text_model(**text_inputs).last_hidden_state[:, -1, :]  # EOS token for gpt2
+        
+        text_projected = self.text_projection(text_embeddings)
+        text_projected = F.normalize(text_projected, dim=-1)
+        
+        return text_projected
+
 
     def forward(self, text_inputs, vision_inputs):
         """
