@@ -72,9 +72,9 @@ def get_args():
                         help="Batch size for training and validation")
     parser.add_argument("--learning_rate", type=float, default=1e-3, 
                         help="Learning rate for optimizer")
-    parser.add_argument("--log_interval", type=int, default=500, 
+    parser.add_argument("--log_interval", type=int, default=1000, 
                         help="How many batches to wait before logging training status")
-    parser.add_argument("--eval_interval", type=int, default=500, 
+    parser.add_argument("--eval_interval", type=int, default=1000, 
                         help="How many batches to wait before evaluating and checkpointing")
     parser.add_argument("--use_wandb", action="store_true", 
                         help="Whether to log metrics to Weights and Biases")
@@ -125,26 +125,26 @@ if __name__ == "__main__":
     eval_interval=args.eval_interval,
     use_wandb=args.use_wandb,
     checkpoint_dir=args.checkpoint_dir,
-    neg_weight=0.1 
     )
     
     # TODO: remove hardcoded negative captions path
+    # For training, load the data with negative captions csv
     train_dataloader = MSCOCODataLoader(
-    captions_file=args.train_captions_json_path, 
-    neg_captions_file="../augment_annotations/variants_train2017_all.csv",  
+    captions_file="../augment_annotations/variants_train2017_all.csv",  
     image_folder=args.train_images_folder_path, 
     text_model_name=text_model_name, 
     vision_model_name=vision_model_name,
-    batch_size=args.batch_size
+    batch_size=args.batch_size,
+    training=True
     ).load_datasets()
 
     val_dataloader = MSCOCODataLoader(
     captions_file=args.val_captions_json_path, 
-    neg_captions_file="../augment_annotations/variants_train2017_all.csv", 
     image_folder=args.val_images_folder_path, 
     text_model_name=text_model_name, 
     vision_model_name=vision_model_name,
-    batch_size=args.batch_size
+    batch_size=args.batch_size,
+    training=False
     ).load_datasets()
 
     # Edit before individual runs
@@ -152,7 +152,7 @@ if __name__ == "__main__":
         wandb.login(key="")
         wandb.init(
             project="clip_lora", 
-            name=f"aug_clip_{args.text_model_size}-text_{args.vision_model_size}-vision_{'peft' if args.use_peft else 'projection_only'}_seed{args.seed}",
+            name=f"neg_clip_{args.text_model_size}-text_{args.vision_model_size}-vision_{'peft' if args.use_peft else 'projection_only'}_seed{args.seed}",
             config=vars(args),
             entity="ethathua"
         )

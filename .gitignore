@@ -6,6 +6,7 @@ venv
 
 # Model weights
 checkpoints
+checkpoints_aug
 projection_weights
 
 # Raw data
